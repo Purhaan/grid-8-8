@@ -426,11 +426,57 @@
                 return;
             }
             
-            imageData.forEach((imageInfo, index) => {
-                setTimeout(() => {
-                    downloadImage(imageInfo.canvas, imageInfo.fileName);
-                }, index * 200); // Stagger downloads
-            });
+            // Show download progress
+            const downloadBtn = document.getElementById('downloadAllBtn');
+            const originalText = downloadBtn.textContent;
+            
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Preparing Downloads...';
+            
+            // Sequential download with user confirmation for each
+            let currentIndex = 0;
+            
+            function downloadNext() {
+                if (currentIndex >= imageData.length) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = originalText;
+                    alert('All downloads completed!');
+                    return;
+                }
+                
+                const imageInfo = imageData[currentIndex];
+                downloadBtn.textContent = `Downloading ${currentIndex + 1}/${imageData.length}...`;
+                
+                try {
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.download = imageInfo.fileName.replace(/\.[^/.]+$/, '') + '_grid.png';
+                    link.href = imageInfo.canvas.toDataURL('image/png');
+                    
+                    // Trigger download
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    currentIndex++;
+                    
+                    // Continue with next download after a short delay
+                    setTimeout(downloadNext, 500);
+                    
+                } catch (error) {
+                    console.error('Download failed for:', imageInfo.fileName, error);
+                    if (confirm(`Download failed for ${imageInfo.fileName}. Continue with next image?`)) {
+                        currentIndex++;
+                        setTimeout(downloadNext, 100);
+                    } else {
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = originalText;
+                    }
+                }
+            }
+            
+            // Start the download sequence
+            downloadNext();
         }
 
         function clearAll() {
